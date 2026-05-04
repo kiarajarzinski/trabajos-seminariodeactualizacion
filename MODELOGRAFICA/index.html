@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Modelo Secuencial</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      #resultado-container {
+        margin-top: 20px;
+        font-size: 1.2em;
+        color: #333;
+        display: none;
+      }
+
+    </style>
+  </head>
+  <body>
+    <h1>Entrenamiento para la formula y = 2x+6 </h1>
+    <div id="micro-out-div">Entrenando...</div>
+    <!-- Contenedor para pedir datos al usuario despues del entrenamiento -->
+    <div id="resultado-container">
+        <p><strong>El modelo ya se puede utilizar<strong></p>
+        <label for="inputX">Ingrese un valor para X:</label>
+        <input type="number" id="inputX">
+        <button onclick="predecir()">Predecir Y</button>
+        <h2 id="outputY"></h2>
+    </div>
+    <script>
+      let model;
+        async function learnLinear() {
+          // primero se crea el modelo
+            model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+            //compilamos el modelo
+
+            model.compile({
+                loss: 'meanSquaredError',
+                optimizer: 'sgd'
+            });
+            
+    //ahora se crean los datos (y=2x+6)
+       const xs = tf.tensor2d([-6, -5, -4, -3, -2, -1, 0, 1, 2], [9, 1]);
+       const ys = tf.tensor2d([-6, -4, -2, 0, 2, 4, 6, 8, 10], [9, 1]);
+        //ACA VA LA GRAFICA DE LOS VALORES DE LOSS EN CADA EPOCA
+
+        const surface = { name: 'Pérdida (Loss)', tab: 'Entrenamiento' };
+            const history = [];
+
+            await model.fit(xs, ys, {
+                epochs: 250,
+                callbacks: {
+                    // Capturar el valor de loss en cada época
+                    onEpochEnd: (epoch, logs) => {
+                        history.push({ x: epoch, y: logs.loss });
+                        // Graficar en tiempo real
+                        tfvis.show.history(surface, history, ['loss']);
+                    }
+                }
+            });
+
+
+         //notificamos que termino el entrenamiento
+          document.getElementById('micro-out-div').style.display = 'none';
+          document.getElementById('resultado-container').style.display = 'block';
+        }
+        function predecir() {
+            const xVal = parseFloat(document.getElementById('inputX').value);
+            if (isNaN(xVal)) return;
+            const prediction = model.predict(tf.tensor2d([xVal], [1, 1]));
+            
+            prediction.data().then(data => {
+                document.getElementById('outputY').innerText = "Resultado (Y): " + data[0];
+            });
+        }
+      learnLinear();
+          
+    </script>
+  </body>
+</html>
